@@ -264,7 +264,7 @@ def get_processed_data(resource_path, data_files_path):
     return x_train, y_train, x_test, y_test
 
 
-def evaluate_model(trainX, trainy, testX, testy):
+def evaluate_model(trainX, trainy, testX, testy, save_path=None):
     trainy = to_categorical(trainy)
     testy = to_categorical(testy)
     model = Sequential()
@@ -301,7 +301,11 @@ def evaluate_model(trainX, trainy, testX, testy):
     model.fit(trainX, trainy, batch_size=16, epochs=30)
     # evaluate model
     _, accuracy = model.evaluate(testX, testy)
+
     # save model
+    if save_path is not None:
+        model.save(os.path.join(save_path, 'aggression_detect_model.h5'))
+
     return accuracy
 
 
@@ -314,17 +318,20 @@ def summarize_results(scores):
 # create workspace structure
 resource_path = os.path.join(os.getcwd(), 'resources')
 data_files_path = os.path.join(resource_path, 'data_files')
+net_files_path = os.path.join(resource_path, 'net_files')
 if not os.path.isdir(resource_path):
     os.mkdir(resource_path)
 if not os.path.isdir(data_files_path):
     os.mkdir(data_files_path)
+if not os.path.isdir(net_files_path):
+    os.mkdir(net_files_path)
 
 x_train, y_train, x_test, y_test = get_processed_data(resource_path, data_files_path)
 # pca select main features
-take_variance = .99
+take_variance = .995
 pca = PCA(take_variance)
 
-print("Compute pca relevant features with " + str(take_variance) +  " percent of variance")
+print("Compute pca relevant features with " + str(take_variance) + " percent of variance")
 previous_dims = len(x_train[0])
 train_pca = pca.fit_transform(x_train)
 test_pca = pca.transform(x_test)
@@ -333,12 +340,4 @@ print(str(len(train_pca[0])) + " dims are used from initially " + str(previous_d
 x_train = np.expand_dims(x_train, axis=2)
 x_test = np.expand_dims(x_test, axis=2)
 
-repeats = 10
-scores = list()
-for r in range(repeats):
-    score = evaluate_model(x_train, y_train, x_test, y_test)
-    score = score * 100.0
-    print('>#%d: %.3f' % (r + 1, score))
-    scores.append(score)
-# summarize results
-summarize_results(scores)
+print(evaluate_model(x_train, y_train, x_test, y_test, net_files_path))
