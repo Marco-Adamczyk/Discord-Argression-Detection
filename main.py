@@ -138,7 +138,7 @@ def duplicate_data(x_data, y_data, length=0.5, times=4):
     return x_new_data, y_new_data
 
 
-def add_noise_from_file(x_data, y_data, noise_file, percent_of_data, max_pitch_vary, max_db_vary):
+def add_noise_from_file(x_data, y_data, noise_file, percent_of_data, max_pitch_vary, weight_noise):
     noise_signal, _ = librosa.load(noise_file, mono=True)
     for i in range(len(x_data)):
         x_data[i].append(y_data[i])
@@ -153,7 +153,7 @@ def add_noise_from_file(x_data, y_data, noise_file, percent_of_data, max_pitch_v
         edited_noise_signal = noise_signal[signal_start:signal_start + len(signal)]
         edited_noise_signal = librosa.effects.pitch_shift(edited_noise_signal, sr,
                                                           random.uniform(-max_pitch_vary, max_pitch_vary))
-        new_x_data.append([signal + edited_noise_signal, sr])
+        new_x_data.append([(signal * weight_noise + edited_noise_signal * (1 - weight_noise)), sr])
         new_y_data.append(label)
     return new_x_data, new_y_data
 
@@ -218,20 +218,20 @@ def get_processed_data(resource_path, data_files_path):
 
         print("Add clean noisy data:")
         x, y = add_noise_from_file(copy.deepcopy(x_complete_data), copy.deepcopy(y_complete_data), os.path.join(resource_path, "clean_noise.wav"), 1.0,
-                                   0.8, 10)
+                                   0.8, 0.5)
         print(len(x_complete_data[0]))
         x_complete_data = x_complete_data + x
         y_complete_data = y_complete_data + y
 
         print("Add keyboard noise:")
         x, y = add_noise_from_file(copy.deepcopy(x_complete_data), copy.deepcopy(y_complete_data), os.path.join(resource_path, "keyboard_sound.wav"), 0.1,
-                                   0.5, 10)
+                                   0.2, 0.3)
         x_complete_data = x_complete_data + x
         y_complete_data = y_complete_data + y
 
         print("Add mouse click noise:")
         x, y = add_noise_from_file(copy.deepcopy(x_complete_data), copy.deepcopy(y_complete_data), os.path.join(resource_path, "mouse_click_sound.wav"),
-                                   0.05, 0.5, 10)
+                                   0.05, 0.5, 0.4)
         x_complete_data = x_complete_data + x
         y_complete_data = y_complete_data + y
 
