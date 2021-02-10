@@ -6,6 +6,7 @@ import scipy
 from sklearn.decomposition import PCA
 from tensorflow.python.keras import Sequential
 from tensorflow.python.keras.layers import Conv1D, Dropout, Flatten, Dense, Activation, BatchNormalization
+from tensorflow.python.keras.models import load_model
 from tensorflow.python.keras.utils.np_utils import to_categorical
 from tqdm import tqdm
 import shutil
@@ -183,8 +184,6 @@ not_angry_label = 0
 
 
 def get_processed_data(resource_path, data_files_path):
-    x_complete_data = []
-    y_complete_data = []
 
     if len(os.listdir(data_files_path)) == 0:
         print("Get Ravdess dataset")
@@ -195,45 +194,65 @@ def get_processed_data(resource_path, data_files_path):
 
         print("Extract files with label: 1")
         x, y = extract_data_from_file(data_set.query(emotion=['05', '08'], intensity=['02']), 1)
-        x_complete_data = x_complete_data + x
-        y_complete_data = y_complete_data + y
+        x_label_one_data = x
+        y_label_one_data = y
 
         print("Extract files with label: 0")
         x, y = extract_data_from_file(
             random.sample(data_set.query(emotion=['01', '02', '03', '04', '05', '06'], intensity=['01', '02'])
-                          , len(x_complete_data)), 0)
-        x_complete_data = x_complete_data + x
-        y_complete_data = y_complete_data + y
+                          , len(x_label_one_data)), 0)
+        x_label_zero_data = x
+        y_label_zero_data = y
 
         time.sleep(1)
         print("Duplicate data data set:")
         time.sleep(1)
-        x_complete_data, y_complete_data = duplicate_data(x_complete_data, y_complete_data)
+        x_label_one_data, y_label_one_data = duplicate_data(x_label_one_data, y_label_one_data)
+        x_label_zero_data, y_label_zero_data = duplicate_data(x_label_zero_data, y_label_zero_data)
         time.sleep(1)
 
         print("Add some pitched examples:")
-        x, y = vary_pitch(copy.deepcopy(x_complete_data), copy.deepcopy(y_complete_data))
-        x_complete_data = x_complete_data + x
-        y_complete_data = y_complete_data + y
+        x, y = vary_pitch(copy.deepcopy(x_label_one_data), copy.deepcopy(y_label_one_data))
+        x_label_one_data = x_label_one_data + x
+        y_label_one_data = y_label_one_data + y
+        x, y = vary_pitch(copy.deepcopy(x_label_zero_data), copy.deepcopy(y_label_zero_data))
+        x_label_zero_data = x_label_zero_data + x
+        y_label_zero_data = y_label_zero_data + y
 
         print("Add clean noisy data:")
-        x, y = add_noise_from_file(copy.deepcopy(x_complete_data), copy.deepcopy(y_complete_data), os.path.join(resource_path, "clean_noise.wav"), 1.0,
+        x, y = add_noise_from_file(copy.deepcopy(x_label_one_data), copy.deepcopy(y_label_one_data), os.path.join(resource_path, "clean_noise.wav"), 1.0,
                                    0.8, 0.5)
-        print(len(x_complete_data[0]))
-        x_complete_data = x_complete_data + x
-        y_complete_data = y_complete_data + y
+        x_label_one_data = x_label_one_data + x
+        y_label_one_data = y_label_one_data + y
+        x, y = add_noise_from_file(copy.deepcopy(x_label_zero_data), copy.deepcopy(y_label_zero_data), os.path.join(resource_path, "clean_noise.wav"), 1.0,
+                                   0.8, 0.5)
+        x_label_zero_data = x_label_zero_data + x
+        y_label_zero_data = y_label_zero_data + y
 
         print("Add keyboard noise:")
-        x, y = add_noise_from_file(copy.deepcopy(x_complete_data), copy.deepcopy(y_complete_data), os.path.join(resource_path, "keyboard_sound.wav"), 0.1,
+        x, y = add_noise_from_file(copy.deepcopy(x_label_one_data), copy.deepcopy(y_label_one_data), os.path.join(resource_path, "keyboard_sound.wav"), 0.1,
                                    0.2, 0.3)
-        x_complete_data = x_complete_data + x
-        y_complete_data = y_complete_data + y
+        x_label_one_data = x_label_one_data + x
+        y_label_one_data = y_label_one_data + y
+        x, y = add_noise_from_file(copy.deepcopy(x_label_zero_data), copy.deepcopy(y_label_zero_data), os.path.join(resource_path, "keyboard_sound.wav"), 0.1,
+                                   0.2, 0.3)
+        x_label_zero_data = x_label_zero_data + x
+        y_label_zero_data = y_label_zero_data + y
 
         print("Add mouse click noise:")
-        x, y = add_noise_from_file(copy.deepcopy(x_complete_data), copy.deepcopy(y_complete_data), os.path.join(resource_path, "mouse_click_sound.wav"),
+        x, y = add_noise_from_file(copy.deepcopy(x_label_one_data), copy.deepcopy(y_label_one_data), os.path.join(resource_path, "mouse_click_sound.wav"),
                                    0.05, 0.5, 0.4)
-        x_complete_data = x_complete_data + x
-        y_complete_data = y_complete_data + y
+        x_label_one_data = x_label_one_data + x
+        y_label_one_data = y_label_one_data + y
+        x, y = add_noise_from_file(copy.deepcopy(x_label_zero_data), copy.deepcopy(y_label_zero_data), os.path.join(resource_path, "mouse_click_sound.wav"),
+                                   0.05, 0.5, 0.4)
+        x_label_zero_data = x_label_zero_data + x
+        y_label_zero_data = y_label_zero_data + y
+
+
+        # combine data
+        x_complete_data = x_label_one_data + x_label_zero_data
+        y_complete_data = y_label_one_data + y_label_zero_data
 
         print("Compute features from signal:")
         x_complete_data = get_features(x_complete_data)
@@ -264,80 +283,14 @@ def get_processed_data(resource_path, data_files_path):
     return x_train, y_train, x_test, y_test
 
 
-def evaluate_model(trainX, trainy, testX, testy, save_path=None):
-    trainy = to_categorical(trainy)
-    testy = to_categorical(testy)
-    model = Sequential()
-    model.add(Conv1D(256, 8, padding='same', input_shape=(trainX.shape[1], 1)))
-    model.add(Activation('relu'))
-    model.add(Conv1D(256, 8, padding='same'))
-    model.add(BatchNormalization())
-    model.add(Activation('relu'))
-    model.add(Dropout(0.6))
-    model.add(Conv1D(128, 8, padding='same'))
-    model.add(Activation('relu'))
-    model.add(Conv1D(128, 8, padding='same'))
-    model.add(Activation('relu'))
-    model.add(Conv1D(128, 8, padding='same'))
-    model.add(Activation('relu'))
-    model.add(Conv1D(128, 8, padding='same'))
-    model.add(BatchNormalization())
-    model.add(Activation('relu'))
-    model.add(Dropout(0.6))
-    model.add(Conv1D(64, 8, padding='same'))
-    model.add(Activation('relu'))
-    model.add(Conv1D(64, 8, padding='same'))
-    model.add(Activation('relu'))
-    model.add(Flatten())
-    model.add(Dense(4096, activation='relu'))
-    model.add(Dense(4096, activation='relu'))
-    model.add(Dropout(0.6))
-    model.add(Dense(2))
-    model.add(Activation('softmax'))
-    model.compile(loss='categorical_crossentropy', optimizer=keras.optimizers.SGD(lr=0.001, momentum=0.9, decay=0.0),
-                  metrics=['acc'])
-
-    # fit network
-    model.fit(trainX, trainy, batch_size=16, epochs=30)
-    # evaluate model
-    _, accuracy = model.evaluate(testX, testy)
-
-    # save model
-    if save_path is not None:
-        model.save(os.path.join(save_path, 'aggression_detect_model.h5'))
-
-    return accuracy
-
-
-def summarize_results(scores):
-    print(scores)
-    m, s = np.mean(scores), np.std(scores)
-    print('Accuracy: %.3f%% (+/-%.3f)' % (m, s))
-
-
 # create workspace structure
 resource_path = os.path.join(os.getcwd(), 'resources')
 data_files_path = os.path.join(resource_path, 'data_files')
 net_files_path = os.path.join(resource_path, 'net_files')
+
 if not os.path.isdir(resource_path):
     os.mkdir(resource_path)
 if not os.path.isdir(data_files_path):
     os.mkdir(data_files_path)
 if not os.path.isdir(net_files_path):
     os.mkdir(net_files_path)
-
-x_train, y_train, x_test, y_test = get_processed_data(resource_path, data_files_path)
-# pca select main features
-take_variance = .995
-pca = PCA(take_variance)
-
-print("Compute pca relevant features with " + str(take_variance) + " percent of variance")
-previous_dims = len(x_train[0])
-train_pca = pca.fit_transform(x_train)
-test_pca = pca.transform(x_test)
-print(str(len(train_pca[0])) + " dims are used from initially " + str(previous_dims))
-# expand dims
-x_train = np.expand_dims(x_train, axis=2)
-x_test = np.expand_dims(x_test, axis=2)
-
-print(evaluate_model(x_train, y_train, x_test, y_test, net_files_path))
