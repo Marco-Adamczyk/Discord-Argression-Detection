@@ -2,11 +2,11 @@ import os
 
 import numpy as np
 from sklearn.decomposition import PCA
-from tensorflow.python.estimator import keras
 from tensorflow.python.keras import Sequential
 from tensorflow.python.keras.layers import Conv1D, Dropout, Flatten, Dense, Activation, BatchNormalization
 from tensorflow.python.keras.utils.np_utils import to_categorical
 import data_processing
+import keras
 
 
 def learn_model(x_train, y_train, x_test, y_test, take_components, save_path=None):
@@ -72,5 +72,5 @@ def learn_model(x_train, y_train, x_test, y_test, take_components, save_path=Non
 
 # learn
 x_train, y_train, x_test, y_test = data_processing.get_processed_data(data_processing.resource_path, data_processing.data_files_path)
-net_file = os.path.join(data_processing.save_path, 'aggression_detect_model2_pca_80.h5')
+net_file = os.path.join(data_processing.net_files_path, 'aggression_detect_model2_pca_80.h5')
 print(learn_model(x_train, y_train, x_test, y_test, 80, net_file))

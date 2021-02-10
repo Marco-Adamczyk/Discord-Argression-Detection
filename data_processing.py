@@ -3,11 +3,6 @@ import os
 import copy
 import time
 import scipy
-from sklearn.decomposition import PCA
-from tensorflow.python.keras import Sequential
-from tensorflow.python.keras.layers import Conv1D, Dropout, Flatten, Dense, Activation, BatchNormalization
-from tensorflow.python.keras.models import load_model
-from tensorflow.python.keras.utils.np_utils import to_categorical
 from tqdm import tqdm
 import shutil
 from enum import Enum
@@ -183,7 +178,7 @@ angry_label = 1
 not_angry_label = 0
 
 
-def get_processed_data(resource_path, data_files_path):
+def  get_processed_data(resource_path, data_files_path):
 
     if len(os.listdir(data_files_path)) == 0:
         print("Get Ravdess dataset")
