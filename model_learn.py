@@ -9,14 +9,15 @@ import data_processing
 import keras
 
 
-def learn_model(x_train, y_train, x_test, y_test, take_components, save_path=None):
+def learn_model(x_train, y_train, x_test, y_test, take_components, save_path=None, do_pca=False):
     # pca select main features
-    pca = PCA(n_components=take_components)
-    print("Compute pca relevant features with " + str(take_components) + " percent of variance")
-    previous_dims = len(x_train[0])
-    x_train = pca.fit_transform(x_train)
-    x_test = pca.transform(x_test)
-    print(str(len(x_train[0])) + " dims are used from initially " + str(previous_dims))
+    if do_pca:
+        pca = PCA(n_components=take_components)
+        print("Compute pca relevant features with " + str(take_components) + " percent of variance")
+        previous_dims = len(x_train[0])
+        x_train = pca.fit_transform(x_train)
+        x_test = pca.transform(x_test)
+        print(str(len(x_train[0])) + " dims are used from initially " + str(previous_dims))
 
     # expand dims
     x_train = np.expand_dims(x_train, axis=2)
@@ -58,7 +59,7 @@ def learn_model(x_train, y_train, x_test, y_test, take_components, save_path=Non
                   metrics=['acc'])
 
     # fit network
-    model.fit(x_train, y_train, batch_size=16, epochs=40)
+    model.fit(x_train, y_train, batch_size=16, epochs=33)
 
     # evaluate model
     _, accuracy = model.evaluate(x_test, y_test)
@@ -72,5 +73,5 @@ def learn_model(x_train, y_train, x_test, y_test, take_components, save_path=Non
 
 # learn
 x_train, y_train, x_test, y_test = data_processing.get_processed_data(data_processing.resource_path, data_processing.data_files_path)
-net_file = os.path.join(data_processing.net_files_path, 'aggression_detect_model2_pca_80.h5')
-print(learn_model(x_train, y_train, x_test, y_test, 80, net_file))
+net_file = os.path.join(data_processing.net_files_path, 'aggression_detect_model4_epoch_33.h5')
+print(learn_model(x_train, y_train, x_test, y_test, 0, net_file))

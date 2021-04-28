@@ -40,17 +40,40 @@ def test_model(model_path, test_sound_file_path, label, repetition, signal_lengt
     y_test = to_categorical(np.full((len(x_test)), label), num_classes=2)
 
     # evaluate
-    _, accuracy = loaded_model.evaluate(x_test, y_test)
+    _, accuracy = loaded_model.evaluate(x_test, y_test, batch_size=16)
 
 
 signal, _ = librosa.load(
     os.path.join(data_processing.resource_path, 'ravdess-emotional-speech-audio', 'Actor_01', '03-01-01-01-01-01-01.wav'))
 signal_length = int(len(signal) / 2)
-test_sound_file_path = os.path.join(data_processing.resource_path, 'calm_test_voice.wav')
-test_sound_file_path2 = os.path.join(data_processing.resource_path, 'agressive_test_voice.wav')
+
 training_path = os.path.join(os.getcwd(), data_processing.data_files_path, 'x_train.npy')
+
+test_sound_file_path = os.path.join(data_processing.resource_path, 'calm_test_voice.wav')
+test_sound_file_path4 = os.path.join(data_processing.resource_path, 'calm_test_voice_2.wav')
+test_sound_file_path2 = os.path.join(data_processing.resource_path, 'agressive_test_voice.wav')
+test_sound_file_path3 = os.path.join(data_processing.resource_path, 'agressive_test_voice_2.wav')
 
 # First model without pca and a rather imbalanced dataset 30 epochs
 model_path = os.path.join(data_processing.net_files_path, 'aggression_detect_model.h5')
 test_model(model_path, test_sound_file_path, 0, 30, signal_length)
-test_model(model_path, test_sound_file_path2, training_path, 1, 30, signal_length)
+test_model(model_path, test_sound_file_path2, 1, 30, signal_length)
+
+
+#test_model(model_path, test_sound_file_path3, 1, 15, signal_length)
+#test_model(model_path, test_sound_file_path4, 0, 15, signal_length)
+
+# Second model pca 80 and epochs 40
+#model_path = os.path.join(data_processing.net_files_path, 'aggression_detect_model2_pca_80.h5')
+#test_model(model_path, test_sound_file_path, 0, 30, signal_length, 80, training_path)
+#test_model(model_path, test_sound_file_path2, 1, 30, signal_length, 80, training_path)
+
+# Second model pca 80 and epochs 30
+#model_path = os.path.join(data_processing.net_files_path, 'aggression_detect_model3_pca_40_epoch_30.h5')
+#test_model(model_path, test_sound_file_path, 0, 30, signal_length, 40, training_path)
+#test_model(model_path, test_sound_file_path2, 1, 30, signal_length, 40, training_path)
+
+# Second model pca 80 and epochs 30
+#model_path = os.path.join(data_processing.net_files_path, 'aggression_detect_model4_epoch_33.h5')
+#test_model(model_path, test_sound_file_path, 0, 30, signal_length)
+#test_model(model_path, test_sound_file_path2, 1, 30, signal_length)
